@@ -1,3 +1,3 @@
-cd /home/mayank/Usp_shell_2018
+cd ~/Usp_shell_2018
 make
 ./test
