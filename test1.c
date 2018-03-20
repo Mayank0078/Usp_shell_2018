@@ -68,7 +68,7 @@ int main(int argc, char** argv)
 		else if (pid == 0)
 		{
 			//Child
-			execve(splitString[0],splitString,env);
+			execvpe(splitString[0],splitString,env);
 			fprintf(stderr, "Shell: couldn’t exec %s: %s\n", buf, strerror(errno));
 			exit(0);
 		}
