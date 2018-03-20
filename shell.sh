@@ -1,3 +1,3 @@
 cd ~/Usp_shell_2018
-make
+make > /dev/null
 ./test
