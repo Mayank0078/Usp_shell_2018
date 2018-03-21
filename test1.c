@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include "test1.h"
 
 char** split(char buf[],int length)
@@ -37,16 +38,44 @@ char** split(char buf[],int length)
 	return(splitString);
 }
 
+char* getval(char key[],char splitKey)
+{
+	int len=strlen(key);
+	int i=0;
+	int prev;
+	prev=i;
+	char* val=(char *)malloc(sizeof(char)*20);;
+	while(i<len)
+	{
+		if(key[i]==splitKey)
+		{
+			strncpy(val,&key[i+1],len-(i));
+		}
+		i++;
+	}
+	return(val);
+
+}
 
 int main(int argc, char** argv)
 { 
 	pid_t pid;
 	int status;
-	char* env[]={"USER=student","PATH=/home/manoj/Documents/USP/Usp_shell_2018","PWD=/home/manoj/Documents/USP/Usp_shell_2018","SHELL=/home/manoj/Documents/USP",NULL};
+	char* env[]={"USER=student","PATH=~/Usp_shell_2018","PWD=~/USP/Usp_shell_2018","SHELL=~/USP",NULL};
 	char* buf=(char*)malloc(sizeof(char)*100);
 	int i=0;
 	char c;
+
+	char* prompt=(char *)malloc(sizeof(char)*20);
+	prompt=getval(env[0],'=');
+
+	char* path=(char *)malloc(sizeof(char)*50);
+	path=getenv("PWD");
+
+	printf("%s:",prompt);
+	printf("%s",path);
 	printf("%% ");
+
 	c=getchar();
 	while(c!='\n')
 	{
@@ -54,12 +83,33 @@ int main(int argc, char** argv)
 		c=getchar();
 	}
 	buf[strlen(buf)] = '\0';
-
+	
+	/*char *gdir=(char *)malloc(sizeof(char)*20);
+	char*dir=(char *)malloc(sizeof(char)*20);
+	char*to=(char *)malloc(sizeof(char)*20);
+	*/
 	i=0;
 	char** splitString=split(buf,strlen(buf));
-	
+	//char dummy[1000];
 	while(1)
 	{
+		
+		//fflush(stdout);
+		if (!strcmp(splitString[0], "exit"))
+		{
+			exit(0);
+		}  
+
+        	/*if (!strcmp(splitString[0], "cd"))
+		{
+
+            		gdir = getcwd(dummy, sizeof(dummy));
+            		dir = strcat(gdir, "/");
+            		to = strcat(dir, argv[1]);
+
+           		chdir(to);
+
+        	}   */
 		if((pid=fork()) ==-1)
 		{
 			fprintf(stderr, "Shell: can’ t fork: %s\n", strerror(errno));
@@ -73,21 +123,23 @@ int main(int argc, char** argv)
 			exit(0);
 		}
 			
-		if ((pid=waitpid(pid,&status, 0)) < 0)
+		if ((pid=waitpid(pid,&status, 0))<=0)
 		{	
 			fprintf(stderr,"shell: waitpid error: %s\n",strerror(errno));
 		}
 
+		printf("%s:",prompt);
+		printf("%s",path);	
 		printf("%% ");
 		c=getchar();
 		i=0;
+
 		while(c!='\n')
 		{
 			buf[i++]=c;
 			c=getchar();
 		}
-		buf[strlen(buf)] = '\0';
-		
+		buf[i] = '\0';
 		splitString=split(buf,strlen(buf));	
 	
 	}	
