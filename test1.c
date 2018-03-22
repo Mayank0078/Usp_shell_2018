@@ -84,13 +84,13 @@ int main(int argc, char** argv)
 	}
 	buf[strlen(buf)] = '\0';
 	
-	/*char *gdir=(char *)malloc(sizeof(char)*20);
+	char *gdir=(char *)malloc(sizeof(char)*20);
 	char*dir=(char *)malloc(sizeof(char)*20);
 	char*to=(char *)malloc(sizeof(char)*20);
-	*/
+	
 	i=0;
 	char** splitString=split(buf,strlen(buf));
-	//char dummy[1000];
+	char dummy[1000];
 	while(1)
 	{
 		
@@ -100,16 +100,48 @@ int main(int argc, char** argv)
 			exit(0);
 		}  
 
-        	/*if (!strcmp(splitString[0], "cd"))
+        	if (!strcmp(splitString[0], "cd"))
 		{
-
+			//To change path for cd ..
             		gdir = getcwd(dummy, sizeof(dummy));
+			printf("###############################\n");
+			printf("%s\n",gdir);
+			printf("###############################\n");
             		dir = strcat(gdir, "/");
-            		to = strcat(dir, argv[1]);
 
+			printf("###############################\n");
+			printf("%s\n",dir);
+			printf("###############################\n");
+            		to = strcat(dir, splitString[1]);
+
+			printf("###############################\n");
+			printf("%s\n",to);
+			printf("###############################\n");
            		chdir(to);
+			if(splitString[1]=="..")
+			{
+				
+			}
+			else
+			{
+			path=to;
+			}
+			printf("%s:",prompt);
+			printf("%s",path);	
+			printf("%% ");
+			c=getchar();
+			i=0;
 
-        	}   */
+			while(c!='\n')
+			{
+				buf[i++]=c;
+				c=getchar();
+			}
+			buf[i] = '\0';
+			splitString=split(buf,strlen(buf));
+			continue;
+
+        	}   
 		if((pid=fork()) ==-1)
 		{
 			fprintf(stderr, "Shell: can’ t fork: %s\n", strerror(errno));
