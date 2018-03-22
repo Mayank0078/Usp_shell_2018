@@ -1,11 +1,24 @@
 #define _GNU_SOURCE
 #include "test1.h"
 
+/*struct history
+{
+	char** commandHistory;
+	int noOfCommands;
+};
+
+typedef struct history history; 
+
+history* logs;
+*/
+
+
+
 char** split(char buf[],int length)
 {
-	char** splitString=(char**)malloc(sizeof(char*)*NO_OF_COMMANDS);
+	char** splitString=(char**)malloc(sizeof(char*)*NO_OF_TOKENS);
 	int i=0;
-	for(i=0;i<NO_OF_COMMANDS;i++)
+	for(i=0;i<NO_OF_TOKENS;i++)
 	{
 		splitString[i]=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
 	}
@@ -14,20 +27,17 @@ char** split(char buf[],int length)
 	printf("%s\n",buf);
 	i=0;
 	prev=i;
-	//while(buf[i]!='\0')
 	while(i<length)
 	{
 		if(buf[i]==' ')
 		{
 			strncpy(splitString[splitCount],&buf[prev],(i-prev));
-			//printf("----------%s\n",splitString[splitCount]);
 			splitCount++;
 			prev=i+1;
 		}
 		else if(buf[i+1]=='\0')
 		{
 			strncpy(splitString[splitCount],&buf[prev],(i-prev+1));
-			//printf("----------%s\n",splitString[splitCount]);
 			splitCount++;
 			prev=i+1;
 		}
@@ -57,11 +67,69 @@ char* getval(char key[],char splitKey)
 
 }
 
-int main(int argc, char** argv)
-{ 
+char* getPreviousPath(char* path)
+{
+	int i=0;
+	int prev=i;
+	char* prevPath=(char*)malloc(sizeof(char)*strlen(path));
+	while(path[i]!='\0')
+	{
+		if(path[i]=='/')
+		{
+			prev=i;
+		}	
+		i++;
+	}
+	strncpy(prevPath,&path[0],prev);
+	return(prevPath);
+}
+
+void displayPrompt(char* prompt,char* path)
+{
+	printf("%s:",prompt);
+	printf("%s",path);
+	printf("%% ");
+}
+
+char* getInput()
+{
+	int i=0;
+	char c;
+	char* buf=(char*)malloc(sizeof(char)*100);
+	c=getchar();
+	while(c!='\n')
+	{
+		buf[i++]=c;
+		c=getchar();
+	}
+	buf[i] = '\0';
+	return(buf);
+}
+
+void saveLogs(char* buf)
+{
+	if(noOfCommands>=MAX_NO_OF_COMMANDS)
+	{
+		noOfCommands=0;
+	}
+	strncpy(commandHistory[noOfCommands],&buf[0],strlen(buf));
+	noOfCommands++;
+}
+
+void getHistory()
+{
+	int i=0;
+	for(i=0;i<noOfCommands;i++)
+	{
+		printf("  %d  %s\n",(i+1),commandHistory[i]);
+	}
+}
+
+void executeShell()
+{
 	pid_t pid;
 	int status;
-	char* env[]={"USER=student","PATH=~/Usp_shell_2018","PWD=~/USP/Usp_shell_2018","SHELL=~/USP",NULL};
+
 	char* buf=(char*)malloc(sizeof(char)*100);
 	int i=0;
 	char c;
@@ -72,76 +140,52 @@ int main(int argc, char** argv)
 	char* path=(char *)malloc(sizeof(char)*50);
 	path=getenv("PWD");
 
-	printf("%s:",prompt);
-	printf("%s",path);
-	printf("%% ");
-
-	c=getchar();
-	while(c!='\n')
-	{
-		buf[i++]=c;
-		c=getchar();
-	}
-	buf[strlen(buf)] = '\0';
-	
 	char *gdir=(char *)malloc(sizeof(char)*20);
 	char*dir=(char *)malloc(sizeof(char)*20);
 	char*to=(char *)malloc(sizeof(char)*20);
 	
 	i=0;
-	char** splitString=split(buf,strlen(buf));
-	char dummy[1000];
+	char** splitString;
+
 	while(1)
 	{
+
+		displayPrompt(prompt,path);
+		buf=getInput();
+		saveLogs(buf);
+		splitString=split(buf,strlen(buf));
 		
-		//fflush(stdout);
 		if (!strcmp(splitString[0], "exit"))
 		{
 			exit(0);
 		}  
-
-        	if (!strcmp(splitString[0], "cd"))
+		if(!strcmp(splitString[0],"history"))
+		{
+			getHistory();
+			continue;
+		}
+    if (!strcmp(splitString[0], "cd"))
 		{
 			//To change path for cd ..
-            		gdir = getcwd(dummy, sizeof(dummy));
-			printf("###############################\n");
-			printf("%s\n",gdir);
-			printf("###############################\n");
-            		dir = strcat(gdir, "/");
-
-			printf("###############################\n");
-			printf("%s\n",dir);
-			printf("###############################\n");
-            		to = strcat(dir, splitString[1]);
-
-			printf("###############################\n");
-			printf("%s\n",to);
-			printf("###############################\n");
-           		chdir(to);
-			if(splitString[1]=="..")
+      //gdir = getcwd(dummy, sizeof(dummy));
+      
+			gdir=path;
+			if(!strcmp(splitString[1],".."))
 			{
-				
+				path=getPreviousPath(path);
 			}
 			else
 			{
-			path=to;
+        dir = strcat(gdir, "/");	
+				to = strcat(dir, splitString[1]);
+				path=to;
 			}
-			printf("%s:",prompt);
-			printf("%s",path);	
-			printf("%% ");
-			c=getchar();
-			i=0;
 
-			while(c!='\n')
-			{
-				buf[i++]=c;
-				c=getchar();
-			}
-			buf[i] = '\0';
-			splitString=split(buf,strlen(buf));
+      chdir(path);
+  
 			continue;
-
-        	}   
+   	} 
+   	  
 		if((pid=fork()) ==-1)
 		{
 			fprintf(stderr, "Shell: can’ t fork: %s\n", strerror(errno));
@@ -159,22 +203,25 @@ int main(int argc, char** argv)
 		{	
 			fprintf(stderr,"shell: waitpid error: %s\n",strerror(errno));
 		}
-
-		printf("%s:",prompt);
-		printf("%s",path);	
-		printf("%% ");
-		c=getchar();
-		i=0;
-
-		while(c!='\n')
-		{
-			buf[i++]=c;
-			c=getchar();
-		}
-		buf[i] = '\0';
-		splitString=split(buf,strlen(buf));	
 	
 	}	
 	
-	exit(0);	
+}
+
+void initializeShell()
+{
+	commandHistory=(char**)malloc(sizeof(char*)*MAX_NO_OF_COMMANDS);
+	int i=0;
+	for(i=0;i<MAX_NO_OF_COMMANDS;i++)
+	{
+		commandHistory[i]=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
+	}
+	noOfCommands=0;
+}
+
+int main(int argc, char** argv)
+{ 
+	initializeShell();
+	executeShell();
+	return(0);	
 }
