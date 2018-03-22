@@ -35,7 +35,7 @@ char** split(char buf[],int length)
 			splitCount++;
 			prev=i+1;
 		}
-		else if(buf[i+1]=='\0')
+		else if(buf[i+1]==EOFile)
 		{
 			strncpy(splitString[splitCount],&buf[prev],(i-prev+1));
 			splitCount++;
@@ -44,7 +44,7 @@ char** split(char buf[],int length)
 		i++;	
 	}
 
-	splitString[splitCount++]='\0';
+	splitString[splitCount++]=EOFile;
 	return(splitString);
 }
 
@@ -54,7 +54,7 @@ char* getval(char key[],char splitKey)
 	int i=0;
 	int prev;
 	prev=i;
-	char* val=(char *)malloc(sizeof(char)*20);;
+	char* val=(char *)malloc(sizeof(char)*OPTION_LENGTH);;
 	while(i<len)
 	{
 		if(key[i]==splitKey)
@@ -72,9 +72,9 @@ char* getPreviousPath(char* path)
 	int i=0;
 	int prev=i;
 	char* prevPath=(char*)malloc(sizeof(char)*strlen(path));
-	while(path[i]!='\0')
+	while(path[i]!=EOFile)
 	{
-		if(path[i]=='/')
+		if(path[i]==PATH_SEPARATOR)
 		{
 			prev=i;
 		}	
@@ -95,15 +95,21 @@ char* getInput()
 {
 	int i=0;
 	char c;
-	char* buf=(char*)malloc(sizeof(char)*100);
+	char* buf=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
 	c=getchar();
-	while(c!='\n')
+	while(c!=EOLine)
 	{
 		buf[i++]=c;
 		c=getchar();
 	}
-	buf[i] = '\0';
+	buf[i] = EOFile;
 	return(buf);
+}
+
+char* charToString(char c)
+{
+	char *pathSeparator = &c;
+	return(pathSeparator);
 }
 
 void saveLogs(char* buf)
@@ -130,19 +136,18 @@ void executeShell()
 	pid_t pid;
 	int status;
 
-	char* buf=(char*)malloc(sizeof(char)*100);
+	char* buf=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
 	int i=0;
 	char c;
 
-	char* prompt=(char *)malloc(sizeof(char)*20);
+	char* prompt=(char *)malloc(sizeof(char)*PATH_LENGTH);
 	prompt=getval(env[0],'=');
 
-	char* path=(char *)malloc(sizeof(char)*50);
+	char* path=(char *)malloc(sizeof(char)*PATH_LENGTH);
 	path=getenv("PWD");
 
-	char *gdir=(char *)malloc(sizeof(char)*20);
-	char*dir=(char *)malloc(sizeof(char)*20);
-	char*to=(char *)malloc(sizeof(char)*20);
+	char*dir=(char *)malloc(sizeof(char)*PATH_LENGTH);
+	char*to=(char *)malloc(sizeof(char)*PATH_LENGTH);
 	
 	i=0;
 	char** splitString;
@@ -169,14 +174,14 @@ void executeShell()
 			//To change path for cd ..
       //gdir = getcwd(dummy, sizeof(dummy));
       
-			gdir=path;
+
 			if(!strcmp(splitString[1],".."))
 			{
 				path=getPreviousPath(path);
 			}
 			else
 			{
-        dir = strcat(gdir, "/");	
+        dir = strcat(path, charToString(PATH_SEPARATOR));	
 				to = strcat(dir, splitString[1]);
 				path=to;
 			}

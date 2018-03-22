@@ -8,7 +8,13 @@
 
 #define MAX_NO_OF_COMMANDS 25
 #define NO_OF_TOKENS 10
-#define COMMAND_LENGTH 25
+#define COMMAND_LENGTH 40
+#define OPTION_LENGTH COMMAND_LENGTH/2
+#define PATH_LENGTH 20
+
+#define EOFile '\0'
+#define EOLine '\n'
+#define PATH_SEPARATOR '/'
 
 char** split(char buf[],int length);
 
