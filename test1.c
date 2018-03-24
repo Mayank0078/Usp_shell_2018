@@ -24,7 +24,7 @@ char** split(char buf[],int length)
 	}
 	int prev;
 	int splitCount=0;
-	printf("%s\n",buf);
+	
 	i=0;
 	prev=i;
 	while(i<length)
@@ -32,19 +32,23 @@ char** split(char buf[],int length)
 		if(buf[i]==' ')
 		{
 			strncpy(splitString[splitCount],&buf[prev],(i-prev));
+			splitString[splitCount][i]='\0';
+			//printf("%s\n", splitString[splitCount]);
 			splitCount++;
 			prev=i+1;
 		}
-		else if(buf[i+1]==EOFile)
+		else if(buf[i+1]==EOFile || buf[i+1]==EOLine)
 		{
 			strncpy(splitString[splitCount],&buf[prev],(i-prev+1));
+			splitString[splitCount][i+1]='\0';
+			//printf("%s\n", splitString[splitCount]);
 			splitCount++;
 			prev=i+1;
 		}
 		i++;	
 	}
 
-	splitString[splitCount++]=EOFile;
+	splitString[splitCount]=EOFile;
 	return(splitString);
 }
 
@@ -64,7 +68,6 @@ char* getval(char key[],char splitKey)
 		i++;
 	}
 	return(val);
-
 }
 
 char* getPreviousPath(char* path)
@@ -96,7 +99,9 @@ char* getInput()
 	int i=0;
 	char c;
 	char* buf=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
-	c=getchar();
+
+	scanf(" %c",&c);
+	//c=getchar();
 	while(c!=EOLine)
 	{
 		buf[i++]=c;
@@ -127,8 +132,104 @@ void getHistory()
 	int i=0;
 	for(i=0;i<noOfCommands;i++)
 	{
-		printf("  %d  %s\n",(i+1),commandHistory[i]);
+		if(i>9)
+		{
+			printf("  %d %s\n",(i+1),commandHistory[i]);
+		}
+		else
+		{
+			printf("  %d  %s\n",(i+1),commandHistory[i]);
+		}
 	}
+}
+
+void openEditor(char filename[])
+{
+	int i=0;
+	char prev;
+	char curr;
+	char* buf=(char*)malloc(sizeof(char)*MAX_FILE_SIZE);
+	
+	/*char c;
+	FILE *fp1;
+	fp1 = fopen(filename, "r");
+	if(fp1==NULL)
+	{
+		fprintf(stderr, "Shell: couldn't open file %s: %s\n", filename, strerror(errno));
+	}
+	else
+	{
+	if (fp1)
+	{
+    while((c = getc(fp1)) != EOF)
+    	putchar(c);
+    fclose(fp1);
+	}
+	//fprintf(b,"%s",buf);
+	//}
+	//fclose(fp1);
+	
+	//prev=getchar();
+	//curr=getchar();*/
+	
+	char c;
+	FILE *fp;
+	fp = fopen(filename, "a+");
+	//char* fileContent=(char*)malloc(sizeof(char)*MAX_FILE_SIZE);
+	//int fileSize;
+	if(fp==NULL)
+	{
+		fprintf(stderr, "Shell: couldn't open file %s: %s\n", filename, strerror(errno));
+	}
+	else
+	{
+		int j=0;
+		while((c = getc(fp)) != EOF)
+		{
+    	putchar(c);
+    	//fileContent[j]=c;
+    	//j++;		
+		}
+		//fileContent[j]='\0';
+		//fprintf(stdout,"%s",fileContent);
+		//fileSize=j;
+		
+		scanf(" %c",&prev);
+		//prev=getchar();
+		/*if(c=='\b')
+		{
+			fileSize=fileSize-1;
+			fileContent[fileSize]='\0';
+			fprintf(stdout,"%s",fileContent);			
+			//fflush(stdout);
+		}*/
+		//scanf(" %c",&curr);
+		curr=getchar();
+		int len=0;
+		buf[len++]=prev;
+		while(prev!=':' ||  curr!='q')
+		{
+			buf[len++]=curr;
+			prev=curr;
+			curr=getchar();
+			//scanf(" %c",&curr);
+		}
+		buf[len-1]='\0';
+		
+		//printf("%s\n",buf);
+		fprintf(fp,"%s",buf);
+	}
+	int fd=fileno(fp);
+	//printf("%d\n",fd);
+	/*if(lseek(fd,0,SEEK_SET)==-1)
+	{
+		fprintf(stderr, "Shell: couldn't lseek: %s\n",strerror(errno));	
+	}
+	*/
+		//fflush(stdin);
+	//fflush(stdout);	
+	fclose(fp);
+
 }
 
 void executeShell()
@@ -154,12 +255,11 @@ void executeShell()
 
 	while(1)
 	{
-
 		displayPrompt(prompt,path);
-		buf=getInput();
+		buf=getInput();	
 		saveLogs(buf);
 		splitString=split(buf,strlen(buf));
-		
+
 		if (!strcmp(splitString[0], "exit"))
 		{
 			exit(0);
@@ -169,12 +269,15 @@ void executeShell()
 			getHistory();
 			continue;
 		}
+		if(!strcmp(splitString[0],"m3"))
+		{
+			char* filename=(char*)malloc(sizeof(char)*MAX_FILENAME_LENGTH);
+			strcpy(filename,splitString[1]);
+			openEditor(filename);
+			continue;
+		}
     if (!strcmp(splitString[0], "cd"))
 		{
-			//To change path for cd ..
-      //gdir = getcwd(dummy, sizeof(dummy));
-      
-
 			if(!strcmp(splitString[1],".."))
 			{
 				path=getPreviousPath(path);
