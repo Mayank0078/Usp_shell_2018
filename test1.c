@@ -94,6 +94,59 @@ void displayPrompt(char* prompt,char* path)
 	printf("%% ");
 }
 
+
+void source(char* filename)
+{
+    FILE *fp;
+    fp = fopen(filename ,"r");
+    char c = fgetc(fp);
+
+    char* buf=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
+    aliasNames = (char**)malloc(sizeof(char*)*MAX_ALIASES);
+    aliasDecoded = (char**)malloc(sizeof(char*)*MAX_ALIASES);
+
+    int i,j,k;
+
+    for(i=0;i<MAX_ALIASES;i++)
+	{
+		aliasDecoded[i]=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
+        aliasNames[i]=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
+	}
+  
+    k = 0;
+    j = 0;
+
+    while(c != EOF){
+        
+        while(c != ' '){
+            c = fgetc(fp);
+        }
+       // lseek(fileno(fp), 0, 5);        //to ignore the word alias :p
+        c = fgetc(fp);
+
+        while(c != '='){
+            buf[j] = c;
+            j++;
+            c = fgetc(fp);
+        }
+        strcpy(aliasNames[k], buf);
+        
+        c = fgetc(fp);
+        j = 0;
+        while(c != EOLine){
+            if (c != '\''){
+                buf[j] = c;
+                j++;
+            }
+            c = fgetc(fp);
+        }
+        strcpy(aliasDecoded[k], buf);
+		printf("alias decoded %s\n", aliasDecoded[k]);
+        k++;
+        c = fgetc(fp);
+    }
+}
+
 char* getInput()
 {
 	int i=0;
@@ -236,6 +289,7 @@ void executeShell()
 {
 	pid_t pid;
 	int status;
+	int flag = 0;
 
 	char* buf=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
 	int i=0;
@@ -260,6 +314,18 @@ void executeShell()
 		saveLogs(buf);
 		splitString=split(buf,strlen(buf));
 
+		if(flag)
+		{
+			for(i=0; i<MAX_ALIASES; i++)
+			{
+				if(!strcmp(splitString[0], aliasNames[i])){
+					splitString = split(aliasDecoded[i], strlen(aliasDecoded[i]));
+					printf("%s\n", aliasDecoded[i]);
+					printf("%s\n", splitString[0]);
+					break;
+				}
+			}
+		}
 		if (!strcmp(splitString[0], "exit"))
 		{
 			exit(0);
@@ -276,27 +342,43 @@ void executeShell()
 			openEditor(filename);
 			continue;
 		}
-    if (!strcmp(splitString[0], "cd"))
+		if(!strcmp(splitString[0], "source"))
 		{
+			char* filename=(char*)malloc(sizeof(char)*MAX_FILENAME_LENGTH);
+			strcpy(filename,splitString[1]);
+			source(filename);
+			flag = 1;
+			continue;
+		}
+    	if (!strcmp(splitString[0], "cd"))
+		{
+			char* currPath = (char *)malloc(sizeof(char)*PATH_LENGTH);
+			strncpy(currPath, &path[0], strlen(path));
+
 			if(!strcmp(splitString[1],".."))
 			{
 				path=getPreviousPath(path);
 			}
 			else
 			{
-        dir = strcat(path, charToString(PATH_SEPARATOR));	
+        		dir = strcat(path, "/");	
+
 				to = strcat(dir, splitString[1]);
+
 				path=to;
 			}
 
-      chdir(path);
-  
+    		int r = chdir(path);
+			if(r){
+				fprintf(stderr, "Shell: can’t cd: %s\n", strerror(errno));
+				strcpy(path, currPath);
+			}
 			continue;
    	} 
    	  
 		if((pid=fork()) ==-1)
 		{
-			fprintf(stderr, "Shell: can’ t fork: %s\n", strerror(errno));
+			fprintf(stderr, "Shell: can’t fork: %s\n", strerror(errno));
 			continue;
 		}	
 		else if (pid == 0)
