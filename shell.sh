@@ -1,2 +1,2 @@
 make > /dev/null
-./test
+./shell

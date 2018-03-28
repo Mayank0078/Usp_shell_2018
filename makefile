@@ -1,4 +1,4 @@
 all:prog
 
-prog:test1.o
-	gcc test1.c -o test -g 
+prog:shell.o
+	gcc shell.c -o shell -g 
