@@ -1,19 +1,6 @@
 #define _GNU_SOURCE
 #include "test1.h"
 
-/*struct history
-{
-	char** commandHistory;
-	int noOfCommands;
-};
-
-typedef struct history history; 
-
-history* logs;
-*/
-
-
-
 char** split(char buf[],int length)
 {
 	char** splitString=(char**)malloc(sizeof(char*)*NO_OF_TOKENS);
@@ -33,15 +20,13 @@ char** split(char buf[],int length)
 		{
 			strncpy(splitString[splitCount],&buf[prev],(i-prev));
 			splitString[splitCount][i]='\0';
-			//printf("%s\n", splitString[splitCount]);
 			splitCount++;
 			prev=i+1;
 		}
 		else if(buf[i+1]==EOFile || buf[i+1]==EOLine)
 		{
 			strncpy(splitString[splitCount],&buf[prev],(i-prev+1));
-			splitString[splitCount][i+1]='\0';
-			//printf("%s\n", splitString[splitCount]);
+			splitString[splitCount][i-prev+1]='\0';
 			splitCount++;
 			prev=i+1;
 		}
@@ -94,59 +79,6 @@ void displayPrompt(char* prompt,char* path)
 	printf("%% ");
 }
 
-
-void source(char* filename)
-{
-    FILE *fp;
-    fp = fopen(filename ,"r");
-    char c = fgetc(fp);
-
-    char* buf=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
-    aliasNames = (char**)malloc(sizeof(char*)*MAX_ALIASES);
-    aliasDecoded = (char**)malloc(sizeof(char*)*MAX_ALIASES);
-
-    int i,j,k;
-
-    for(i=0;i<MAX_ALIASES;i++)
-	{
-		aliasDecoded[i]=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
-        aliasNames[i]=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
-	}
-  
-    k = 0;
-    j = 0;
-
-    while(c != EOF){
-        
-        while(c != ' '){
-            c = fgetc(fp);
-        }
-       // lseek(fileno(fp), 0, 5);        //to ignore the word alias :p
-        c = fgetc(fp);
-
-        while(c != '='){
-            buf[j] = c;
-            j++;
-            c = fgetc(fp);
-        }
-        strcpy(aliasNames[k], buf);
-        
-        c = fgetc(fp);
-        j = 0;
-        while(c != EOLine){
-            if (c != '\''){
-                buf[j] = c;
-                j++;
-            }
-            c = fgetc(fp);
-        }
-        strcpy(aliasDecoded[k], buf);
-		printf("alias decoded %s\n", aliasDecoded[k]);
-        k++;
-        c = fgetc(fp);
-    }
-}
-
 char* getInput()
 {
 	int i=0;
@@ -154,7 +86,6 @@ char* getInput()
 	char* buf=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
 
 	scanf(" %c",&c);
-	//c=getchar();
 	while(c!=EOLine)
 	{
 		buf[i++]=c;
@@ -176,25 +107,91 @@ void saveLogs(char* buf)
 	{
 		noOfCommands=0;
 	}
-	strncpy(commandHistory[noOfCommands],&buf[0],strlen(buf));
-	noOfCommands++;
+	strcpy(historyTable[noOfCommands].command,buf);
+
 }
 
 void getHistory()
 {
 	int i=0;
+	printf("     PID   TIME");
+	for(i=0;i<(strlen(historyTable[0].time)-3);i++)
+	{
+		printf(" ");
+	}
+	printf("CMD\n");
 	for(i=0;i<noOfCommands;i++)
 	{
 		if(i>9)
 		{
-			printf("  %d %s\n",(i+1),commandHistory[i]);
+			printf("  %d %d  %s %s\n",(i+1),historyTable[i].commandPid,historyTable[i].time,historyTable[i].command);
 		}
 		else
 		{
-			printf("  %d  %s\n",(i+1),commandHistory[i]);
+			printf("   %d %d %s %s\n",(i+1),historyTable[i].commandPid,historyTable[i].time,historyTable[i].command);
 		}
 	}
 }
+
+
+void source(char* filename)
+{
+ 	FILE *fp;
+	fp = fopen(filename ,"r");
+  char c = fgetc(fp);
+
+  char* buf=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
+  aliasNames = (char**)malloc(sizeof(char*)*MAX_ALIASES);
+  aliasDecoded = (char**)malloc(sizeof(char*)*MAX_ALIASES);
+
+  int i,j,k;
+
+  for(i=0;i<MAX_ALIASES;i++)
+	{
+		aliasDecoded[i]=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
+    aliasNames[i]=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
+	}
+  
+  k = 0;
+  j = 0;
+
+  while(c != EOF)
+  {
+   	while(c != ' ')
+   	{
+    	c = fgetc(fp);
+    }
+    c = fgetc(fp);
+		while(c != '=')
+		{
+     	buf[j] = c;
+      j++;
+      c = fgetc(fp);
+    }
+    buf[j]='\0';
+    strcpy(aliasNames[k], buf);
+    
+    c = fgetc(fp);
+    j = 0;
+    strcpy(buf, "");
+		while(c != EOLine)
+		{
+    	if (c != '\'')
+    	{
+       	buf[j] = c;
+        j++;
+      }
+      c = fgetc(fp);
+    }
+    buf[j]='\0';
+    strcpy(aliasDecoded[k], buf);
+    k++;
+		strcpy(buf, "");
+    c = fgetc(fp);
+    j=0;
+	}
+}
+
 
 void openEditor(char filename[])
 {
@@ -202,34 +199,10 @@ void openEditor(char filename[])
 	char prev;
 	char curr;
 	char* buf=(char*)malloc(sizeof(char)*MAX_FILE_SIZE);
-	
-	/*char c;
-	FILE *fp1;
-	fp1 = fopen(filename, "r");
-	if(fp1==NULL)
-	{
-		fprintf(stderr, "Shell: couldn't open file %s: %s\n", filename, strerror(errno));
-	}
-	else
-	{
-	if (fp1)
-	{
-    while((c = getc(fp1)) != EOF)
-    	putchar(c);
-    fclose(fp1);
-	}
-	//fprintf(b,"%s",buf);
-	//}
-	//fclose(fp1);
-	
-	//prev=getchar();
-	//curr=getchar();*/
-	
 	char c;
 	FILE *fp;
+	
 	fp = fopen(filename, "a+");
-	//char* fileContent=(char*)malloc(sizeof(char)*MAX_FILE_SIZE);
-	//int fileSize;
 	if(fp==NULL)
 	{
 		fprintf(stderr, "Shell: couldn't open file %s: %s\n", filename, strerror(errno));
@@ -240,23 +213,8 @@ void openEditor(char filename[])
 		while((c = getc(fp)) != EOF)
 		{
     	putchar(c);
-    	//fileContent[j]=c;
-    	//j++;		
 		}
-		//fileContent[j]='\0';
-		//fprintf(stdout,"%s",fileContent);
-		//fileSize=j;
-		
 		scanf(" %c",&prev);
-		//prev=getchar();
-		/*if(c=='\b')
-		{
-			fileSize=fileSize-1;
-			fileContent[fileSize]='\0';
-			fprintf(stdout,"%s",fileContent);			
-			//fflush(stdout);
-		}*/
-		//scanf(" %c",&curr);
 		curr=getchar();
 		int len=0;
 		buf[len++]=prev;
@@ -265,55 +223,59 @@ void openEditor(char filename[])
 			buf[len++]=curr;
 			prev=curr;
 			curr=getchar();
-			//scanf(" %c",&curr);
 		}
 		buf[len-1]='\0';
 		
-		//printf("%s\n",buf);
 		fprintf(fp,"%s",buf);
 	}
 	int fd=fileno(fp);
-	//printf("%d\n",fd);
-	/*if(lseek(fd,0,SEEK_SET)==-1)
-	{
-		fprintf(stderr, "Shell: couldn't lseek: %s\n",strerror(errno));	
-	}
-	*/
-		//fflush(stdin);
-	//fflush(stdout);	
+		
 	fclose(fp);
+}
 
+void updatePid(pid_t pid)
+{
+	historyTable[noOfCommands].commandPid=pid;
+}
+
+void updateTimestamp()
+{
+	time_t ltime;
+	struct tm *newtime;
+	time(&ltime);
+  newtime = localtime(&ltime);
+  char* timest = asctime(newtime);
+  strcpy(historyTable[noOfCommands].time,timest);
+	int len=strlen(historyTable[noOfCommands].time);
+	historyTable[noOfCommands].time[len-1]='\0';
 }
 
 void executeShell()
 {
 	pid_t pid;
 	int status;
-	int flag = 0;
-
+	int flag=0;
 	char* buf=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
 	int i=0;
 	char c;
-
 	char* prompt=(char *)malloc(sizeof(char)*PATH_LENGTH);
-	prompt=getval(env[0],'=');
-
 	char* path=(char *)malloc(sizeof(char)*PATH_LENGTH);
-	path=getenv("PWD");
-
 	char*dir=(char *)malloc(sizeof(char)*PATH_LENGTH);
 	char*to=(char *)malloc(sizeof(char)*PATH_LENGTH);
-	
-	i=0;
 	char** splitString;
+	
+	prompt=getval(env[0],'=');
+	path=getenv("PWD");
+	i=0;
 
 	while(1)
 	{
+		noOfCommands++;
 		displayPrompt(prompt,path);
 		buf=getInput();	
 		saveLogs(buf);
+		pid=getpid();
 		splitString=split(buf,strlen(buf));
-
 		if(flag)
 		{
 			for(i=0; i<MAX_ALIASES; i++)
@@ -328,15 +290,21 @@ void executeShell()
 		}
 		if (!strcmp(splitString[0], "exit"))
 		{
+		  updateTimestamp();  
+			updatePid(pid);	
 			exit(0);
 		}  
 		if(!strcmp(splitString[0],"history"))
 		{
+		  updateTimestamp();  
+			updatePid(pid);	
 			getHistory();
 			continue;
 		}
 		if(!strcmp(splitString[0],"m3"))
 		{
+		  updateTimestamp();  
+			updatePid(pid);	
 			char* filename=(char*)malloc(sizeof(char)*MAX_FILENAME_LENGTH);
 			strcpy(filename,splitString[1]);
 			openEditor(filename);
@@ -344,41 +312,37 @@ void executeShell()
 		}
 		if(!strcmp(splitString[0], "source"))
 		{
+		  updateTimestamp();  
+			updatePid(pid);
 			char* filename=(char*)malloc(sizeof(char)*MAX_FILENAME_LENGTH);
 			strcpy(filename,splitString[1]);
 			source(filename);
 			flag = 1;
 			continue;
 		}
-    	if (!strcmp(splitString[0], "cd"))
+    if(!strcmp(splitString[0], "cd"))
 		{
-			char* currPath = (char *)malloc(sizeof(char)*PATH_LENGTH);
-			strncpy(currPath, &path[0], strlen(path));
-
+		  updateTimestamp();  
+			updatePid(pid);	
+			char* currentPath=(char*)malloc(sizeof(char)*PATH_LENGTH);
+			strcpy(currentPath,path);
 			if(!strcmp(splitString[1],".."))
 			{
 				path=getPreviousPath(path);
 			}
 			else
 			{
-        		dir = strcat(path, "/");	
-
+        dir = strcat(path,"/");	
 				to = strcat(dir, splitString[1]);
-
 				path=to;
 			}
-
-    		int r = chdir(path);
-			if(r){
-				fprintf(stderr, "Shell: can’t cd: %s\n", strerror(errno));
-				strcpy(path, currPath);
-			}
+			chdir(path);
 			continue;
    	} 
-   	  
+   	updateTimestamp();  
 		if((pid=fork()) ==-1)
 		{
-			fprintf(stderr, "Shell: can’t fork: %s\n", strerror(errno));
+			fprintf(stderr, "Shell: can’ t fork: %s\n", strerror(errno));
 			continue;
 		}	
 		else if (pid == 0)
@@ -388,25 +352,24 @@ void executeShell()
 			fprintf(stderr, "Shell: couldn’t exec %s: %s\n", buf, strerror(errno));
 			exit(0);
 		}
-			
+		updatePid(pid);	
 		if ((pid=waitpid(pid,&status, 0))<=0)
 		{	
 			fprintf(stderr,"shell: waitpid error: %s\n",strerror(errno));
 		}
-	
+
 	}	
 	
 }
 
 void initializeShell()
 {
-	commandHistory=(char**)malloc(sizeof(char*)*MAX_NO_OF_COMMANDS);
-	int i=0;
-	for(i=0;i<MAX_NO_OF_COMMANDS;i++)
+	for(int i=0;i<MAX_NO_OF_COMMANDS;i++)
 	{
-		commandHistory[i]=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
+		historyTable[i].command=(char*)malloc(sizeof(char)*COMMAND_LENGTH);
+		historyTable[i].time=(char*)malloc(sizeof(char)*TIMESTAMP_LENGTH);
 	}
-	noOfCommands=0;
+	noOfCommands=-1;
 }
 
 int main(int argc, char** argv)
