@@ -264,7 +264,7 @@ void executeShell()
 	char*to=(char *)malloc(sizeof(char)*PATH_LENGTH);
 	char** splitString;
 	
-	prompt=getval(env[0],'=');
+	prompt=getenv("USERNAME");
 	path=getenv("PWD");
 	i=0;
 
@@ -348,7 +348,7 @@ void executeShell()
 		else if (pid == 0)
 		{
 			//Child
-			execvpe(splitString[0],splitString,env);
+			execvpe(splitString[0],splitString, env);
 			fprintf(stderr, "Shell: couldn’t exec %s: %s\n", buf, strerror(errno));
 			exit(0);
 		}
@@ -372,8 +372,13 @@ void initializeShell()
 	noOfCommands=-1;
 }
 
-int main(int argc, char** argv)
-{ 
+int main(int argc, char** argv, char* envp[])
+{
+	env=(char**)malloc(sizeof(char*)*NO_OF_TOKENS);
+	env[0] = envp[8];
+	env[1] = envp[41];
+	env[2] = envp[17];
+	env[3] = envp[26];
 	initializeShell();
 	executeShell();
 	return(0);	

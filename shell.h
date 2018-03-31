@@ -42,4 +42,4 @@ struct history historyTable[MAX_NO_OF_COMMANDS];
 
 int noOfCommands;
 
-char* env[]={"USER=student","PATH=~/Usp_shell_2018","PWD=~/USP/Usp_shell_2018","SHELL=~/USP",NULL};
+char** env;
