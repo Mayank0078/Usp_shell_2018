@@ -375,10 +375,13 @@ void initializeShell()
 int main(int argc, char** argv, char* envp[])
 {
 	env=(char**)malloc(sizeof(char*)*NO_OF_TOKENS);
-	env[0] = envp[8];
-	env[1] = envp[41];
-	env[2] = envp[17];
-	env[3] = envp[26];
+	env[0] = getenv("USERNAME");
+	if(env[0]==NULL)
+		env[0] = getenv("LOGNAME");
+	
+	env[1] = getenv("PWD");
+	env[2] = getenv("PATH");
+	env[3] = getenv("SHELL");
 	initializeShell();
 	executeShell();
 	return(0);	
