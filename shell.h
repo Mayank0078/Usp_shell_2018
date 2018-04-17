@@ -25,11 +25,17 @@
 #define EOLine '\n'
 #define PATH_SEPARATOR '/'
 
+void pipeHandler(char * args[]);
+void fileIO(char * args[], char* inputFile, char* outputFile, int option);
+void launchProg(char **args, int background);
+int commandHandler(char * args[]);
 
-
+extern char** environ;
+char* currentDirectory;
 char** split(char buf[],int length);
 char** aliasNames;
 char** aliasDecoded;
+pid_t pid;
 
 struct history
 {

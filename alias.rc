@@ -1,3 +1,6 @@
 alias c..='cd ..'
 alias la='ls -a'
 alias ll='ls -l'
+alias dateu='date -u'
+alias day='date +%A'
+alias dus='du -s'
