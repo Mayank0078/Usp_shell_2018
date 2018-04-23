@@ -10,6 +10,8 @@
 #include<stdint.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <dirent.h>
 
 #define MAX_NO_OF_COMMANDS 25
 #define NO_OF_TOKENS 10
@@ -20,6 +22,7 @@
 #define MAX_FILE_SIZE 256
 #define MAX_FILENAME_LENGTH 25
 #define TIMESTAMP_LENGTH 25
+#define MAX_NO_FILES 50
 
 #define EOFile '\0'
 #define EOLine '\n'
@@ -29,6 +32,7 @@ void pipeHandler(char * args[]);
 void fileIO(char * args[], char* inputFile, char* outputFile, int option);
 void launchProg(char **args, int background);
 int commandHandler(char * args[]);
+void listFiles(char*);
 
 extern char** environ;
 char* currentDirectory;

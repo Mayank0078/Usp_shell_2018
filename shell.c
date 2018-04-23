@@ -41,6 +41,138 @@ int checkPipe(char** splitString)
 	}
 }
 
+char** getFiles(char* dir)
+{
+	DIR* FD;
+	struct dirent* in_file;
+
+	int ind;
+
+	char** files = (char**) malloc (sizeof(char*)*MAX_NO_FILES);
+	for(ind=0; ind<MAX_NO_FILES; ind++){
+		files[ind] = (char*)malloc(sizeof(char)*MAX_FILENAME_LENGTH);
+	}
+	ind = 0;
+
+	if (NULL == (FD = opendir (dir))) 
+    {
+        fprintf(stderr, "Error : Failed to open input directory - %s\n", strerror(errno));
+        //return NULL;
+    }
+
+	while ((in_file = readdir(FD))) 
+    {
+        if (!strcmp (in_file->d_name, "."))
+            continue;
+        if (!strcmp (in_file->d_name, ".."))    
+            continue;
+
+		strcpy(files[ind], in_file->d_name);
+		ind++;
+	}
+
+	files[ind] = NULL;
+	return files;
+}
+
+void listFiles(char* dir)
+{
+	struct stat st;
+	int size, ind;
+
+	char** files = getFiles(dir);
+	ind = 0;
+
+	while (files[ind]) 
+    {
+		stat(files[ind], &st);
+		size = st.st_size;
+
+		if(size == 0){
+			printf("%s\t", files[ind]);
+		}
+		ind++;
+	}
+	printf("\n");
+}
+
+void sortByUid(char* dir)
+{
+	struct stat st;
+	int uid, ind, i;
+
+	char** files = getFiles(dir);
+	ind = 0;
+
+	typedef struct Node{
+		int f_uid;
+		char filename[64];
+		struct Node* next;
+	}fileNode;
+
+	//fileNode* fileList = (fileNode*)malloc(sizeof(fileNode));
+	fileNode* fileList = NULL;
+
+	while (files[ind]) 
+    {
+		stat(files[ind], &st);
+		uid = st.st_uid;
+
+		//printf("%d, %s -----1\n", uid, files[ind]);
+		fileNode* holder = (fileNode*)malloc(sizeof(fileNode));
+
+		holder->f_uid = uid;
+		strncpy(holder->filename, files[ind], strlen(files[ind]));
+		holder -> next = NULL;
+
+		//printf("%d, %s -----2\n", holder->f_uid, holder->filename);
+
+		if(fileList == NULL){
+			fileList = holder;
+			//free(holder);
+			continue;
+		}
+
+		if(fileList->next == NULL){
+			if (holder->f_uid >= fileList->f_uid){
+				holder->next = NULL;
+				fileList -> next = holder;
+			}
+
+			else{
+				holder -> next = fileList;
+				fileList = holder;
+			}
+			continue;
+		}
+
+		fileNode* temp = fileList;
+		//temp = fileList;
+		while(temp){
+			if (holder->f_uid >= temp->f_uid && temp->next){
+				temp = temp -> next;
+			}
+
+			else{
+				holder->next = temp->next;
+				temp -> next = holder;
+				break;
+			}
+		}
+		//free(holder);
+		//free(temp);
+		ind++;
+	}
+	fileNode* temp1 = fileList;
+	//printf("%d\t%s\n", temp1 -> f_uid, temp1 -> filename);
+	printf("UID\tFilename\n");
+	while(temp1->next){
+		printf("%d\t%s\n", temp1 -> f_uid, temp1 -> filename);
+		temp1 = temp1 -> next;
+	}
+	//free(temp1);
+}
+
 char** split(char buf[],int length)
 {
 	char** splitString=(char**)malloc(sizeof(char*)*NO_OF_TOKENS);
@@ -301,8 +433,8 @@ int executeShell()
 	char c;
 	char* prompt=(char *)malloc(sizeof(char)*PATH_LENGTH);
 	char* path=(char *)malloc(sizeof(char)*PATH_LENGTH);
-	char*dir=(char *)malloc(sizeof(char)*PATH_LENGTH);
-	char*to=(char *)malloc(sizeof(char)*PATH_LENGTH);
+	char* dir=(char *)malloc(sizeof(char)*PATH_LENGTH);
+	char* to=(char *)malloc(sizeof(char)*PATH_LENGTH);
 	char** splitString;
 	
 	//prompt=getenv("USERNAME");
@@ -315,6 +447,7 @@ int executeShell()
 	{
 		int i = 0;
 		int j = 0;
+		int numElements = 0;
 
 		pflag=0;
 		noOfCommands++;
@@ -324,6 +457,10 @@ int executeShell()
 		saveLogs(buf);
 		pid=getpid();
 		splitString=split(buf,strlen(buf));
+
+		while(splitString[numElements]!=NULL)
+			numElements++;
+
 		char **args;
 		/*if(checkPipe(splitString))
 		{
@@ -391,7 +528,20 @@ int executeShell()
 			flag = 1;
 			continue;
 		}
-	  else if(!strcmp(splitString[0], "cd"))
+		else if(numElements>1 && !strcmp(splitString[0], "ls") && !strcmp(splitString[1], "-z"))
+		{
+			char* cwd = getenv("PWD");
+			listFiles(cwd);
+			continue;
+		}
+
+		else if(numElements>1 && !strcmp(splitString[0], "ls") && !strcmp(splitString[1], "-u"))
+		{
+			char* cwd = getenv("PWD");
+			sortByUid(cwd);
+			continue;
+		}
+	  	else if(!strcmp(splitString[0], "cd"))
 		{
 			updateTimestamp();  
 			updatePid(pid);	
