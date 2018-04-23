@@ -14,7 +14,7 @@
 #include <dirent.h>
 
 #define MAX_NO_OF_COMMANDS 25
-#define NO_OF_TOKENS 10
+#define NO_OF_TOKENS 15
 #define COMMAND_LENGTH 40
 #define MAX_ALIASES MAX_NO_OF_COMMANDS
 #define OPTION_LENGTH COMMAND_LENGTH/2
