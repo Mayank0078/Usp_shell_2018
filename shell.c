@@ -147,7 +147,6 @@ char* getInput()
 			flag=1;
 		}
 	}
-	printf("---%s---\n",buf);
 	buf[i] = EOFile;
 	return(buf);
 }
@@ -336,33 +335,49 @@ int executeShell()
 		noOfCommands++;
 		displayPrompt(prompt,path);
 		buf=getInput();
-		//printf("***********%s********\n",buf);	
 		saveLogs(buf);
 		pid=getpid();
 		splitString=split(buf,strlen(buf));
 		char **args;
-		/*if(checkPipe(splitString))
-		{
-			updateTimestamp();  
-			updatePid(pid);
-			pipeHandler(splitString);
-		}
-		else
-		{*/
-		args=splitString;
-		
+
 		if((!strcmp(splitString[0],"ps")) && splitString[1]!=NULL)
 		{
 			if(!strcmp(splitString[1],"-z"))
 			{
-				printf("I am in\n");
 				splitString[1]="-as";
 				splitString[2]="|";
 				splitString[3]="grep";
-				splitString[4]="z";
+				splitString[4]="Z";
 				splitString[5]=EOFile;
 			}
+			else if(!strcmp(splitString[1],"-cpu"))
+			{
+				splitString[1]="-auxf";
+				splitString[2]="|";
+				splitString[3]="sort";
+				splitString[4]="-nr";
+				splitString[5]="-k";
+				splitString[6]="3";
+				splitString[7]="|";
+				splitString[8]="head";
+				splitString[9]="-10";
+				splitString[10]=EOFile;
+			}
+			else if(!strcmp(splitString[1],"-memry"))
+			{
+				splitString[1]="-auxf";
+				splitString[2]="|";
+				splitString[3]="sort";
+				splitString[4]="-nr";
+				splitString[5]="-k";
+				splitString[6]="4";
+				splitString[7]="|";
+				splitString[8]="head";
+				splitString[9]="-10";
+				splitString[10]=EOFile;
+			}			
 		}
+		args=splitString;
 		if(checkPipe(splitString))
 		{
 			pflag=1;
@@ -374,8 +389,6 @@ int executeShell()
 				if(!strcmp(splitString[0], aliasNames[z]))
 				{
 					splitString = split(aliasDecoded[z], strlen(aliasDecoded[z]));
-					//printf("%s\n", aliasDecoded[i]);
-					//printf("%s\n", splitString[0]);
 					break;
 				}
 			}
@@ -465,12 +478,23 @@ int executeShell()
 				splitString[3]="-e";
 				splitString[4]=temp;
 				splitString[5]=EOFile;
-				execvpe(splitString[0],splitString, environ);
 			}
-			else
+			else if((!strcmp(splitString[0],"ps")) && splitString[1]!=NULL)
 			{
-				execvpe(splitString[0],splitString, environ);
+				if(!strcmp(splitString[1],"-ph"))
+				{
+					pid_t p=getp	id();
+					char spid[5];
+					sprintf(spid, "%d",p);
+					splitString[0]="pstree";
+					splitString[1]="-s";
+					splitString[2]="-p";
+					splitString[3]=spid;
+					splitString[4]=EOFile;
+				}
 			}
+			execvpe(splitString[0],splitString, environ);
+			
 			fprintf(stderr, "Shell: couldn’t exec %s: %s\n", buf, strerror(errno));
 			exit(0);
 		}
